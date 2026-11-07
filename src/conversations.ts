@@ -90,6 +90,19 @@ export async function createCardConversation(
   const editMenu = (text: string, keyboard?: InlineKeyboard) =>
     editMenuMessage(ctx, chatId, menuMsgId, text, keyboard);
 
+  // Id сообщений пользователя с вводом — удаляем их из чата в конце,
+  // чтобы не копились (бот может удалять входящие в личке до 48 часов).
+  const userMsgIds: number[] = [];
+  if (!menuMessage && ctx.msg?.text?.startsWith("/new")) {
+    userMsgIds.push(ctx.msg.message_id);
+  }
+  const cleanupInputs = () =>
+    conversation.external(async () => {
+      for (const id of userMsgIds) {
+        await ctx.api.deleteMessage(chatId, id).catch(() => {});
+      }
+    });
+
   // Ожидание текстового ввода с валидацией и возможностью отмены.
   // Возвращает null при отмене.
   const waitText = async (
@@ -100,9 +113,11 @@ export async function createCardConversation(
       const input = await conversation.wait();
       if (input.callbackQuery?.data === "nav:cancel") {
         await input.answerCallbackQuery();
+        await cleanupInputs();
         await editMenu(MAIN_MENU_TEXT, mainMenuKeyboard());
         return null;
       }
+      if (input.msg) userMsgIds.push(input.msg.message_id);
       const value = input.msg?.text?.trim();
       if (value && validate(value)) return { text: value };
       await editMenu(invalidPrompt, cancelKeyboard());
@@ -117,6 +132,7 @@ export async function createCardConversation(
     ]);
     await tplCtx.answerCallbackQuery();
     if (tplCtx.callbackQuery.data === "nav:cancel") {
+      await cleanupInputs();
       await editMenu(MAIN_MENU_TEXT, mainMenuKeyboard());
       return;
     }
@@ -160,9 +176,11 @@ export async function createCardConversation(
         }
         if (input.callbackQuery?.data === "nav:cancel") {
           await input.answerCallbackQuery();
+          await cleanupInputs();
           await editMenu(MAIN_MENU_TEXT, mainMenuKeyboard());
           return;
         }
+        if (input.msg) userMsgIds.push(input.msg.message_id);
         const slot = input.msg?.text?.trim();
         if (slot) altSlots.push(slot);
       }
@@ -192,17 +210,21 @@ export async function createCardConversation(
     await decision.answerCallbackQuery();
 
     if (decision.callbackQuery.data === "nav:cancel") {
+      await cleanupInputs();
       await editMenu(MAIN_MENU_TEXT, mainMenuKeyboard());
       return;
     }
     if (decision.callbackQuery.data === "pv:save") {
       await conversation.external(() => saveCard(card));
+      await cleanupInputs();
       await editMenu(
         "✅ Открытка сохранена! Нажмите «Отправить другу» — или вернитесь в меню:",
         afterSaveKeyboard(),
       );
       return;
     }
+    await cleanupInputs();
+    userMsgIds.length = 0;
     await editMenu("Какую открытку делаем?", templateKeyboard());
   }
 }
