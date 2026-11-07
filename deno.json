@@ -1,0 +1,8 @@
+{
+  "tasks": {
+    "dev": "deno run --env-file -E -N bot.ts"
+  },
+  "imports": {
+    "grammy": "npm:grammy"
+  }
+}
