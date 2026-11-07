@@ -1,4 +1,5 @@
 export type CardKind = "simple" | "invite";
+export type CardAudience = "personal" | "group";
 export type RsvpStatus = "pending" | "accepted" | "counter" | "declined";
 
 export interface Rsvp {
@@ -13,6 +14,8 @@ export interface Card {
   ownerId: number;
   ownerName: string;
   kind: CardKind;
+  /** У старых записей в KV поля нет — читаем через `?? "personal"`. */
+  audience?: CardAudience;
   text: string;
   time?: string;
   altSlots: string[];

@@ -1,5 +1,5 @@
 import { type Bot, InlineQueryResultBuilder } from "grammy";
-import { getCard, listCardsByOwner, updateCard } from "./store.ts";
+import { type Card, getCard, listCardsByOwner, updateCard } from "./store.ts";
 import { renderCard } from "./templates.ts";
 import { rsvpKeyboard } from "./keyboards.ts";
 import type { MyContext } from "./conversations.ts";
@@ -7,13 +7,27 @@ import type { MyContext } from "./conversations.ts";
 const RESULT_ID_PREFIX = "card:";
 const MAX_RESULTS = 30;
 
+// chat_type: "private" — личка (и Избранное); "group"/"supergroup"/"channel" — группы и каналы;
+// "sender"/отсутствует — клиент не сообщил тип, показываем всё.
+function fitsChat(cardAudience: Card["audience"], chatType?: string): boolean {
+  if (!chatType || chatType === "sender") return true;
+  const audience = cardAudience ?? "personal";
+  return chatType === "private"
+    ? audience === "personal"
+    : audience === "group";
+}
+
 export function registerInlineHandlers(bot: Bot<MyContext>): void {
   bot.on("inline_query", async (ctx) => {
-    const cards = await listCardsByOwner(ctx.from.id);
+    const chatType = ctx.inlineQuery.chat_type;
+    const all = await listCardsByOwner(ctx.from.id);
+    const cards = all.filter((card) => fitsChat(card.audience, chatType));
     const results = cards.slice(0, MAX_RESULTS).map((card) =>
       InlineQueryResultBuilder.article(
         `${RESULT_ID_PREFIX}${card.id}`,
-        card.kind === "simple" ? "💌 Открытка" : "✉️ Приглашение",
+        `${card.audience === "group" ? "👥" : "👤"} ${
+          card.kind === "simple" ? "💌 Открытка" : "✉️ Приглашение"
+        }`,
         {
           description: card.text.slice(0, 60),
           ...(card.kind === "invite"
@@ -24,7 +38,7 @@ export function registerInlineHandlers(bot: Bot<MyContext>): void {
     );
     await ctx.answerInlineQuery(results, {
       cache_time: 0,
-      ...(cards.length === 0
+      ...(all.length === 0
         ? {
           button: {
             text: "🎁 Создать первую открытку",

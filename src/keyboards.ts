@@ -8,25 +8,43 @@ export function mainMenuKeyboard(): InlineKeyboard {
     .text("📋 Мои открытки", "menu:my");
 }
 
+export function backToMenuKeyboard(): InlineKeyboard {
+  return new InlineKeyboard().text("« Назад", "nav:menu");
+}
+
 export function templateKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text("💌 Простая открытка", "tpl:simple")
     .row()
-    .text("✉️ Приглашение", "tpl:invite");
+    .text("✉️ Приглашение", "tpl:invite")
+    .row()
+    .text("« Отмена", "nav:cancel");
 }
 
-export function slotsDoneKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().text("Готово ✅", "slots:done");
+export function cancelKeyboard(): InlineKeyboard {
+  return new InlineKeyboard().text("« Отмена", "nav:cancel");
+}
+
+export function slotsInputKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("Готово ✅", "slots:done")
+    .row()
+    .text("« Отмена", "nav:cancel");
 }
 
 export function previewKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text("💾 Сохранить", "pv:save")
-    .text("🔄 Заново", "pv:restart");
+    .text("🔄 Заново", "pv:restart")
+    .row()
+    .text("« Отмена", "nav:cancel");
 }
 
-export function sendKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().switchInline("📤 Отправить другу", "");
+export function afterSaveKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .switchInline("📤 Отправить другу", "")
+    .row()
+    .text("« Назад в меню", "nav:menu");
 }
 
 export function rsvpKeyboard(cardId: string): InlineKeyboard {

@@ -7,9 +7,9 @@ import {
 } from "./src/conversations.ts";
 import { registerInlineHandlers } from "./src/inline.ts";
 import { registerRsvpHandlers } from "./src/rsvp.ts";
-import { showMyCards } from "./src/mycards.ts";
-import { mainMenuKeyboard } from "./src/keyboards.ts";
-import { deleteCard } from "./src/store.ts";
+import { myCardsContent, showMyCards } from "./src/mycards.ts";
+import { showMainMenu } from "./src/menu.ts";
+import { deleteCard, listCardsByOwner } from "./src/store.ts";
 
 const token = Deno.env.get("BOT_TOKEN");
 if (!token) throw new Error("BOT_TOKEN не задан в окружении");
@@ -20,13 +20,7 @@ bot.use(session({ initial: (): SessionData => ({}) }));
 bot.use(conversations());
 bot.use(createConversation(createCardConversation, "createCard"));
 
-bot.command("start", (ctx) =>
-  ctx.reply(
-    "Привет! Я CardlyBot — помогаю собрать открытку или приглашение и отправить его другу от вашего имени.",
-    { reply_markup: mainMenuKeyboard() },
-  )
-);
-
+bot.command("start", showMainMenu);
 bot.command("new", (ctx) => ctx.conversation.enter("createCard"));
 bot.command("my", showMyCards);
 
@@ -40,17 +34,41 @@ bot.callbackQuery("menu:my", async (ctx) => {
   await showMyCards(ctx);
 });
 
+bot.callbackQuery("nav:menu", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await showMainMenu(ctx);
+});
+
+// Отмена вне активного диалога (устаревшая кнопка) — просто показываем меню
+bot.callbackQuery("nav:cancel", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await showMainMenu(ctx);
+});
+
 bot.callbackQuery(/^del:(.+)$/, async (ctx) => {
   await deleteCard(ctx.match[1], ctx.from.id);
   await ctx.answerCallbackQuery({ text: "Открытка удалена" });
-  await ctx.editMessageText("Открытка удалена. Обновить список: /my");
+  const { text, keyboard } = myCardsContent(
+    await listCardsByOwner(ctx.from.id),
+  );
+  await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: keyboard });
 });
 
 registerInlineHandlers(bot);
 registerRsvpHandlers(bot);
 
 bot.catch((err) => {
-  console.error(`Ошибка при обработке update ${err.ctx.update.update_id}:`, err.error);
+  console.error(
+    `Ошибка при обработке update ${err.ctx.update.update_id}:`,
+    err.error,
+  );
 });
+
+// Команды для кнопки Menu (≡) рядом с полем ввода
+await bot.api.setMyCommands([
+  { command: "start", description: "Главное меню" },
+  { command: "new", description: "Новая открытка" },
+  { command: "my", description: "Мои открытки" },
+]);
 
 bot.start();
