@@ -1,8 +1,9 @@
 {
   "tasks": {
-    "dev": "deno run --env-file -E -N bot.ts"
+    "dev": "deno run --env-file -E -N --unstable-kv bot.ts"
   },
   "imports": {
-    "grammy": "npm:grammy"
+    "grammy": "npm:grammy",
+    "@grammyjs/conversations": "npm:@grammyjs/conversations"
   }
 }

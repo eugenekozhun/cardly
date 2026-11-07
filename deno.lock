@@ -1,9 +1,16 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@grammyjs/conversations@*": "2.1.1_grammy@1.46.0",
     "npm:grammy@*": "1.46.0"
   },
   "npm": {
+    "@grammyjs/conversations@2.1.1_grammy@1.46.0": {
+      "integrity": "sha512-hoxqwSkaXDeU7mzXulpk3A4Cmd6UZO3HU4aPoITX5ekSHK7ZcUEmMl7RhKKkqw3z6zVbbAShQreJoVV5/dDSLA==",
+      "dependencies": [
+        "grammy"
+      ]
+    },
     "@grammyjs/types@5.0.0": {
       "integrity": "sha512-iq1Qrq1iPKkB8yAa0qSuIURMZOCuqTY5pWy5gHpCeL1oQ+GPadGhw/cDTVE8waJwuCzacUzuIjRv1sESvk7u7A=="
     },
@@ -56,6 +63,7 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@grammyjs/conversations@*",
       "npm:grammy@*"
     ]
   }
